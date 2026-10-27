@@ -1,6 +1,6 @@
 # MeshWatch — Labelling Rule Book (Phase-1, draft for geotech validation)
 
-Last Updated: 2026-09-20
+Last Updated: 2026-10-27
 
 Draft rule book for annotators, and the document to validate with a geotechnical engineer. Companion to [Phase-1 Labelling Approach](phase-1-labelling-approach.md). Every definition here is a proposal. The SME's edits become the standard.
 
@@ -8,7 +8,7 @@ Draft rule book for annotators, and the document to validate with a geotechnical
 
 This rule book is the single source of truth for how frames are labelled. Annotators follow it exactly; the geotechnical engineer validates and edits it. Once signed off, its definitions are the standard, and every labelling disagreement is settled by pointing back to a rule here.
 
-Scope for this version: **Phase-1 surface segmentation** — assigning every pixel of a frame to one class (mesh, fibrecrete, rock, rockfall, vent-bag, services, other, or ignore) — plus mesh-condition and corrosion flags the geotech anchors now so later phases inherit stable definitions.
+Scope for this version: **Phase-1 surface segmentation** — assigning every pixel of a frame to one class (mesh, fibrecrete, rock, floor, rockfall, vent-bag, services, other, or ignore) — plus mesh-condition and corrosion flags the geotech anchors now so later phases inherit stable definitions.
 
 How we label (full mechanics in Section 7): masks are drawn with SAM2 assistance and corrected by hand; surfaces are labelled on reduced-resolution frames (region extents do not need full resolution); fine corrosion is labelled later at full resolution.
 
@@ -23,11 +23,16 @@ Every pixel gets exactly one class. Definitions and cues below; overlaps are res
 | Mesh | Steel weld or chain-link mesh visible over the surface | Regular square/diamond wire grid; wires cast shadow lines | Grid-like shotcrete cracking; wire shadows cast onto bare shotcrete |
 | Fibrecrete (shotcrete) | Sprayed concrete surface coat | Smooth/hummocky grey coat, visible fibres, shrinkage cracks | Bare rock with no spray texture; mesh over shotcrete (→ mesh) |
 | Rock | Exposed rock, no shotcrete or mesh | Bedding/joint texture, drill scars, no spray coat | Thinned shotcrete; muck pile (→ rockfall) |
-| Rockfall | Detached, fallen rock and floor muck | Loose angular fragments, debris heaps | In-place bedded rock (→ rock); intact floor |
+| Floor | Intact, in-place drive floor (road base) | Compacted, rippled or wheel-tracked road base along the bottom of the frame | Loose debris or muck lying on the floor (→ rockfall) |
+| Rockfall | Detached, fallen rock and floor muck | Loose angular fragments, debris heaps | In-place bedded rock (→ rock); intact floor (→ floor) |
 | Vent bag | Ventilation ducting | Large smooth tube, often green, catenary sag | — |
 | Services | Cables, hoses, pipes, dewatering line, signage | Linear runs along wall/back | Cable shadows on the surface behind |
 | Other / background | Vehicles, people, equipment, open drive/void ahead | — | — |
 | Ignore / void | Anything not reliably labelable (Section 4) | Black falloff, blur, blown glare | — |
+
+Floor is its own class, split out of "rockfall / floor": rippled floor was the MVP's known false trigger, so the model needs to learn it explicitly.
+
+> **TODO (SME):** decide how to label fixed structures and loose items that aren't ground support or services, such as brick vent bulkheads / stoppings, and instruments or equipment lying on the floor or against the wall. Options: `other`, `services`, a new class, or the surface behind them. In Round 0, a brick vent bulkhead was labelled `services` because no class fit.
 
 Elements for later phases (mark now only if the SME wants them): **bolt plate**, **bolt/cable collar**. These are instances (each one separate), not surface classes — they become the Phase-2 focus.
 
@@ -42,11 +47,14 @@ Support stacks — mesh over shotcrete over rock, with services and vent bags in
 3. **Mesh** — if wire is visible at that pixel, it's mesh, whatever is behind it.
 4. **Fibrecrete** — sprayed surface where no mesh wire shows.
 5. **Rock** — exposed rock where there's no shotcrete or mesh.
-6. **Rockfall / floor** — detached, fallen material and floor.
+6. **Rockfall** — detached, fallen material (debris lies on the floor, so it wins over floor).
+7. **Floor** — intact, in-place drive floor.
 
 Worked example: a shotcreted wall with mesh over it, a cable crossing, and a dark patch → cable = services, wire areas = mesh, sprayed areas between wires = fibrecrete, unreadable dark patch = ignore.
 
 Open question for the SME (Section 8): should mesh-over-shotcrete be a single "mesh" label, or do you also need the substrate underneath recorded? For v1 we propose single-label, "mesh wins".
+
+> **TODO (SME):** settle the mesh definition. This book says only pixels with visible wire are mesh, and the sprayed pixels between wires are fibrecrete. The labelling tool (`groundwatch-labelling`, Phase 1a) instead labels the **meshed-area extent** as one region, without cutting out the apertures, because at labelling resolution wire is about 3 px and the apertures 50–65 px, so wire-level masks can't be drawn consistently. Confirm which one is the standard, and update the hard-case rules below to match.
 
 ## The ignore / void class
 
@@ -58,6 +66,8 @@ Marking ignore is not failure — it keeps the labels honest and stops the model
 - It's outside the inspection target (open drive ahead, deep void, headlight flare).
 
 Rules: never invent a class to avoid ignore; when torn between a real class and ignore, choose ignore; ignore pixels are excluded from both training and scoring, so over-using it costs coverage but never corrupts the model. A frame that is mostly ignore should be dropped, not labelled.
+
+> **TODO (SME):** decide whether open drive / void ahead is `other` or `ignore`. This book currently lists it under both (the Other row in Section 2, and the list above). The labelling tool treats it as `ignore` (`reason = out_of_target`), so it is excluded from training and scoring.
 
 ## Damage & condition definitions (SME-anchored)
 
@@ -94,12 +104,14 @@ The recurring ambiguous situations and their ruling — this is the list to argu
 | Mesh over shotcrete | Pixels with visible wire → mesh; sprayed pixels between wires → fibrecrete (per Section 3) |
 | Shotcrete thinned / patchy over rock | Sprayed coat present → fibrecrete; clearly bare rock → rock |
 | Plate shotcreted over | Surface class is fibrecrete; mark the plate as an element only if its outline is discernible |
-| White efflorescence / mineral staining | Not its own class — label the underlying surface; optionally note as a water indicator |
+| White efflorescence / mineral staining | Not its own class — label the underlying surface; optionally note as a water indicator (see TODO below) |
 | Spray-paint, survey/convergence markers, chalk | Confusers — label the surface behind; never label as damage, a plate, or a class of their own |
 | Wet / specular hotspot | Surface still readable → its true class; blown out → ignore |
 | Vent bag / cable across the wall | The occluder's class (vent-bag / services); do not label the wall hidden behind it |
-| Rockfall vs intact floor | Loose, detached, piled → rockfall; bedded, in-place → rock/floor |
+| Rockfall vs intact floor | Loose, detached, piled → rockfall; bedded, in-place wall/back → rock; intact road base → floor |
 | Frame partly blurred (drive-by) | Sharp region labelled normally; blurred region → ignore |
+
+> **TODO (SME):** decide whether water / efflorescence should be a surface class. The perception model recommendation lists water/efflorescence among the segmentation "stuff" classes, but this book (above) and the labelling tool's schema label the surface underneath instead. Deciding to make it a class later means relabelling those regions.
 
 ## Annotation mechanics & QA
 
@@ -120,8 +132,11 @@ Please review and edit directly in this doc, or leave comments. The decisions we
 2. **Mesh-over-shotcrete** — single "mesh" label, or record the substrate separately?
 3. **Mesh R-scale mapping** — do the bagging / diamonding / torn thresholds and R-bands match site practice?
 4. **GSCI rubric** — do the 0–4 descriptions and action anchors match how you'd rate a plate in the field?
-5. **Efflorescence / water** — capture as its own flag, or leave for now?
+5. **Efflorescence / water** — capture as its own surface class or flag, or leave for now? (TODO in Section 6)
 6. **Confusers** — any site markings or fixtures we've missed that annotators would mistake for damage or support?
 7. **Conservative grading** — agree with grading down when the deciding measurement isn't visible?
 8. **Difficult bar** — what should escalate to you rather than be an annotator's call?
+9. **Mesh definition** — visible-wire pixels, or the meshed-area extent the labelling tool uses? (TODO in Section 3)
+10. **Open drive / void ahead** — `other` or `ignore`? (TODO in Section 4)
+11. **Structures and loose items** — brick vent bulkheads, instruments or equipment lying around: which class? (TODO in Section 2)
 
