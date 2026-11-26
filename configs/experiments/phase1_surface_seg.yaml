@@ -1,0 +1,40 @@
+# Phase-1 surface semantic segmentation (docs/perception-model-recommendation.md).
+name: phase1_surface_seg
+
+data:
+  # ASSUMPTION: manifest location and format (see src/groundwatch/data/manifest.py).
+  manifest: data/manifest.csv
+  taxonomy: configs/taxonomy/phase1_surface.yaml
+
+split:
+  # Leave-one-drive-out. A second drive is held out for validation when >= 3 drives exist.
+  use_val_drive: true
+  # ASSUMPTION: a drive needs at least this many labelled frames to be a test drive.
+  min_frames_per_drive: 5
+
+train_data:
+  mode: train_tiles          # or "downscaled" to skip tiling for Phase-1 surfaces
+  tiling: {tile_size: 1024, overlap: 256}
+  crops_per_frame: 8
+  downscale_long_side: 1536
+  class_freq_power: 0.5      # 0 = uniform over present classes, 1 = inverse frequency
+  uniform_crop_prob: 0.2
+  max_crop_ignore_fraction: 0.8
+  seed: 0
+
+eval_data:
+  mode: eval_tiles           # must match train_data: eval_tiles for tiles, downscaled for downscaled
+  tiling: {tile_size: 1024, overlap: 256}
+  downscale_long_side: 1536
+
+augment:
+  hflip: true
+  vflip: false
+  brightness: 0.25
+  contrast: 0.25
+  noise_std: 0.01
+
+model:
+  # Placeholder: read by the model code once it exists.
+  backbone: dinov2_vitb14
+  head: segmentation

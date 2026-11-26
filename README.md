@@ -20,7 +20,10 @@ timeline across repeat passes.
 
 ## Repository layout
 
-- `docs/` — design documents for the perception stack (see below). Model training code lands here as it is built.
+- `docs/` — design documents for the perception stack (see below).
+- `src/groundwatch/` — training code: manifest, leave-one-drive-out splits, tiling and stitching for 24 MP frames, datasets. Model code not yet built. See [`docs/training-code.md`](docs/training-code.md).
+- `configs/` — class taxonomy and experiment configs.
+- `tests/` — `pytest`.
 
 ## Documents
 
@@ -28,6 +31,7 @@ timeline across repeat passes.
 - [`docs/phase-1-labelling-approach.md`](docs/phase-1-labelling-approach.md) — how to label Phase-1 data: pixel-level masks via SAM-assisted annotation in CVAT, with the geotech as editor/adjudicator.
 - [`docs/camera-requirements.md`](docs/camera-requirements.md) — plain-language input to the rig team on what the cameras must deliver (resolution, global shutter, colour, lighting, stereo) and why.
 - [`docs/compute-and-data-pipeline.md`](docs/compute-and-data-pipeline.md) — capture resolution, pre-processing, tiling, and the GPU/storage budget for training and inference.
+- [`docs/training-code.md`](docs/training-code.md) — layout of the training code, how to run it, and the assumptions it makes.
 
 ## Status
 

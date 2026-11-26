@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "groundwatch"
+version = "0.1.0"
+description = "MeshWatch perception training code: ground-support damage detection in mine drives"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "pillow>=10",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+# The model / training loop needs torch. The data layer (manifest, splits,
+# tiling, stitching) does not, so it can be tested and used without a GPU stack.
+train = ["torch>=2.2"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+groundwatch-plan = "groundwatch.train:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
