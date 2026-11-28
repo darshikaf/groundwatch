@@ -1,0 +1,34 @@
+# Phase-1 surface segmentation taxonomy.
+#
+# source_ids: the integer ids written into label rasters by the labelling export.
+# train_index: the channel the model predicts. Must be 0..N-1 with no gaps.
+#
+# ASSUMPTION: the source id numbering below is a placeholder. It must be replaced by the
+# real ids the labelling tool (groundwatch-labelling / CVAT export) writes. The export
+# converter is not part of this skeleton.
+#
+# Open SME decisions this file absorbs (docs/labelling-rule-book.md, sign-off checklist):
+#   #5  water / efflorescence class: source id 20 is reserved. Today it maps to ignore so
+#       nothing is learned from it. If the SME makes it a class, add a class entry for it
+#       instead (and relabel, since current labels mark the surface underneath).
+#   #10 open drive / void ahead: source id 21 is kept separate from "other" so it can be
+#       sent to either. Currently ignore, matching the labelling tool (out_of_target).
+#   #11 bulkheads / loose equipment: source id 22 is kept separate. Currently -> other.
+#   #9  mesh definition (wire pixels vs meshed-area extent) does not change this file;
+#       it changes what the mesh masks look like, and therefore expected mesh IoU.
+name: phase1_surface
+ignore_index: 255
+strict: true
+
+classes:
+  - {name: mesh,       train_index: 0, source_ids: [1]}
+  - {name: fibrecrete, train_index: 1, source_ids: [2]}
+  - {name: rock,       train_index: 2, source_ids: [3]}
+  - {name: floor,      train_index: 3, source_ids: [4]}
+  - {name: rockfall,   train_index: 4, source_ids: [5]}
+  - {name: vent_bag,   train_index: 5, source_ids: [6]}
+  - {name: services,   train_index: 6, source_ids: [7]}
+  - {name: other,      train_index: 7, source_ids: [8, 22]}
+
+# 0 = unlabelled, 255 = ignore/void drawn by the annotator.
+ignore_source_ids: [0, 20, 21, 255]
